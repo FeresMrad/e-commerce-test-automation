@@ -1,0 +1,1 @@
+QA automation practice project for https://automationexercise.com
