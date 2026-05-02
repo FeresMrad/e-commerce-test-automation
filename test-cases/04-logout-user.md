@@ -7,4 +7,4 @@
 7. Click 'login' button
 8. Verify that 'Logged in as username' is visible
 9. Click 'Logout' button
-10. Verify that 'Signup / Login' is visible
+10. Verify that user is navigated to login page

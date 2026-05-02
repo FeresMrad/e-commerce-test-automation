@@ -1,45 +1,25 @@
 import { test, expect } from '@playwright/test';
 import { newUser } from '../fixtures/users';
+import { card } from '../fixtures/payment';
 
-test('TC-01: Register User', async ({ page }) => {
-  // 1-2. Launch & navigate
+test('TC-15: Place Order: Register before Checkout', async ({ page }) => {
+  // 1-2
   await page.goto('/');
-
-  // 3. Verify home page is visible
   await expect(page).toHaveTitle(/Automation Exercise/);
 
-  // 4. Click 'Signup / Login'
+  // 4. Signup / Login
   await page.getByRole('link', { name: 'Signup / Login' }).click();
 
-  // 5. Verify 'New User Signup!' is visible
-  await expect(page.getByRole('heading', { name: /new user signup!/i })).toBeVisible();
-
-  // 6. Enter name and email
+  // 5. Signup
   const signupForm = page.locator('form[action="/signup"]');
   await signupForm.getByPlaceholder('Name').fill(newUser.name);
   await signupForm.getByPlaceholder('Email Address').fill(newUser.email);
-
-  // 7. Click 'Signup'
   await page.getByRole('button', { name: 'Signup' }).click();
-
-  // 8. Verify 'ENTER ACCOUNT INFORMATION'
-  await expect(page.getByText(/enter account information/i)).toBeVisible();
-
-  // 9. Fill account details
-  await page.locator('#id_gender1').check(); // Title: Mr
-  // name + email are pre-filled from step 6
+  await page.locator('#id_gender1').check();
   await page.locator('#password').fill(newUser.password);
   await page.locator('#days').selectOption(newUser.dob.day);
   await page.locator('#months').selectOption(newUser.dob.month);
   await page.locator('#years').selectOption(newUser.dob.year);
-
-  // 10. Newsletter
-  await page.locator('#newsletter').check();
-
-  // 11. Special offers
-  await page.locator('#optin').check();
-
-  // 12. Address details
   await page.locator('#first_name').fill(newUser.firstName);
   await page.locator('#last_name').fill(newUser.lastName);
   await page.locator('#company').fill(newUser.company);
@@ -50,23 +30,52 @@ test('TC-01: Register User', async ({ page }) => {
   await page.locator('#city').fill(newUser.city);
   await page.locator('#zipcode').fill(newUser.zipcode);
   await page.locator('#mobile_number').fill(newUser.mobile);
-
-  // 13. Click 'Create Account'
   await page.getByRole('button', { name: 'Create Account' }).click();
 
-  // 14. Verify 'ACCOUNT CREATED!'
+  // 6
   await expect(page.getByRole('heading', { name: /account created!/i })).toBeVisible();
-
-  // 15. Click 'Continue'
   await page.getByRole('link', { name: 'Continue' }).click();
 
-  // 16. Verify 'Logged in as username'
+  // 7
   await expect(page.getByText(`Logged in as ${newUser.name}`)).toBeVisible();
 
-  // 17. Click 'Delete Account'
-  await page.getByRole('link', { name: 'Delete Account' }).click();
+  // 8. Add a product to cart
+  await page.getByRole('link', { name: 'Products' }).first().click();
+  const products = page.locator('.features_items .product-image-wrapper');
+  await products.nth(0).hover();
+  await products.nth(0).locator('.add-to-cart').first().click();
+  await page.getByRole('button', { name: 'Continue Shopping' }).click();
 
-  // 18. Verify 'ACCOUNT DELETED!' and click 'Continue'
+  // 9-10. Cart
+  await page.getByRole('link', { name: 'Cart' }).first().click();
+  await expect(page).toHaveURL(/\/view_cart/);
+
+  // 11. Proceed To Checkout
+  await page.getByText('Proceed To Checkout').click();
+
+  // 12
+  await expect(page.getByRole('heading', { name: /address details/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /review your order/i })).toBeVisible();
+
+  // 13
+  await page.locator('textarea[name="message"]').fill('Test order — please process.');
+  await page.getByRole('link', { name: /place order/i }).click();
+
+  // 14
+  await page.locator('input[name="name_on_card"]').fill(newUser.name);
+  await page.locator('input[name="card_number"]').fill(card.number);
+  await page.locator('input[name="cvc"]').fill(card.cvc);
+  await page.locator('input[name="expiry_month"]').fill(card.expiryMonth);
+  await page.locator('input[name="expiry_year"]').fill(card.expiryYear);
+
+  // 15
+  await page.locator('button#submit').click();
+
+  // 16
+  await expect(page.getByText(/your order has been placed successfully|order placed/i)).toBeVisible();
+
+  // 17-18
+  await page.getByRole('link', { name: 'Delete Account' }).click();
   await expect(page.getByRole('heading', { name: /account deleted!/i })).toBeVisible();
   await page.getByRole('link', { name: 'Continue' }).click();
 });

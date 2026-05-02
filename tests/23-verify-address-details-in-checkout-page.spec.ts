@@ -1,45 +1,22 @@
 import { test, expect } from '@playwright/test';
 import { newUser } from '../fixtures/users';
 
-test('TC-01: Register User', async ({ page }) => {
-  // 1-2. Launch & navigate
+test('TC-23: Verify address details in checkout page', async ({ page }) => {
+  // 1-2
   await page.goto('/');
-
-  // 3. Verify home page is visible
   await expect(page).toHaveTitle(/Automation Exercise/);
 
-  // 4. Click 'Signup / Login'
+  // 4. Signup / Login -> register
   await page.getByRole('link', { name: 'Signup / Login' }).click();
-
-  // 5. Verify 'New User Signup!' is visible
-  await expect(page.getByRole('heading', { name: /new user signup!/i })).toBeVisible();
-
-  // 6. Enter name and email
   const signupForm = page.locator('form[action="/signup"]');
   await signupForm.getByPlaceholder('Name').fill(newUser.name);
   await signupForm.getByPlaceholder('Email Address').fill(newUser.email);
-
-  // 7. Click 'Signup'
   await page.getByRole('button', { name: 'Signup' }).click();
-
-  // 8. Verify 'ENTER ACCOUNT INFORMATION'
-  await expect(page.getByText(/enter account information/i)).toBeVisible();
-
-  // 9. Fill account details
-  await page.locator('#id_gender1').check(); // Title: Mr
-  // name + email are pre-filled from step 6
+  await page.locator('#id_gender1').check();
   await page.locator('#password').fill(newUser.password);
   await page.locator('#days').selectOption(newUser.dob.day);
   await page.locator('#months').selectOption(newUser.dob.month);
   await page.locator('#years').selectOption(newUser.dob.year);
-
-  // 10. Newsletter
-  await page.locator('#newsletter').check();
-
-  // 11. Special offers
-  await page.locator('#optin').check();
-
-  // 12. Address details
   await page.locator('#first_name').fill(newUser.firstName);
   await page.locator('#last_name').fill(newUser.lastName);
   await page.locator('#company').fill(newUser.company);
@@ -50,23 +27,42 @@ test('TC-01: Register User', async ({ page }) => {
   await page.locator('#city').fill(newUser.city);
   await page.locator('#zipcode').fill(newUser.zipcode);
   await page.locator('#mobile_number').fill(newUser.mobile);
-
-  // 13. Click 'Create Account'
   await page.getByRole('button', { name: 'Create Account' }).click();
 
-  // 14. Verify 'ACCOUNT CREATED!'
+  // 6
   await expect(page.getByRole('heading', { name: /account created!/i })).toBeVisible();
-
-  // 15. Click 'Continue'
   await page.getByRole('link', { name: 'Continue' }).click();
 
-  // 16. Verify 'Logged in as username'
+  // 7
   await expect(page.getByText(`Logged in as ${newUser.name}`)).toBeVisible();
 
-  // 17. Click 'Delete Account'
-  await page.getByRole('link', { name: 'Delete Account' }).click();
+  // 8. Add a product to cart
+  await page.getByRole('link', { name: 'Products' }).first().click();
+  const products = page.locator('.features_items .product-image-wrapper');
+  await products.nth(0).hover();
+  await products.nth(0).locator('.add-to-cart').first().click();
+  await page.getByRole('button', { name: 'Continue Shopping' }).click();
 
-  // 18. Verify 'ACCOUNT DELETED!' and click 'Continue'
+  // 9-10
+  await page.getByRole('link', { name: 'Cart' }).first().click();
+  await expect(page).toHaveURL(/\/view_cart/);
+
+  // 11
+  await page.getByText('Proceed To Checkout').click();
+
+  // 12-13. Verify both delivery and invoice addresses contain the registration data
+  for (const sel of ['#address_delivery', '#address_invoice']) {
+    const block = page.locator(sel);
+    await expect(block).toContainText(newUser.firstName);
+    await expect(block).toContainText(newUser.lastName);
+    await expect(block).toContainText(newUser.address1);
+    await expect(block).toContainText(newUser.city);
+    await expect(block).toContainText(newUser.zipcode);
+    await expect(block).toContainText(newUser.mobile);
+  }
+
+  // 14-15. Delete account
+  await page.getByRole('link', { name: 'Delete Account' }).click();
   await expect(page.getByRole('heading', { name: /account deleted!/i })).toBeVisible();
   await page.getByRole('link', { name: 'Continue' }).click();
 });
